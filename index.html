@@ -138,14 +138,43 @@
             pointer-events: none;
         }
 
-        /* Animasi Tulisan Berjalan */
-        @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
         .animate-marquee {
             display: inline-flex;
-            animation: marquee 30s linear infinite;
+        }
+
+        /* Efek Fade pada Running Text agar lebih profesional */
+        .marquee-container {
+            position: relative;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            cursor: grab;
+            user-select: none;
+        }
+        .marquee-container::-webkit-scrollbar {
+            display: none;
+        }
+        .marquee-container:active {
+            cursor: grabbing;
+        }
+
+        .marquee-container::before,
+        .marquee-container::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            width: 60px;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .marquee-container::before {
+            left: 0;
+            background: linear-gradient(to right, #fff7ed, transparent);
+        }
+        .marquee-container::after {
+            right: 0;
+            background: linear-gradient(to left, #fff7ed, transparent);
         }
 
         /* Animasi Denyut (Pulse) untuk CTA */
@@ -214,7 +243,7 @@
     </header>
 
     <!-- Running Text Section -->
-    <div class="relative z-30 bg-orange-50 border-y border-orange-100 py-3 overflow-hidden whitespace-nowrap">
+    <div class="marquee-container relative z-30 bg-orange-50 border-y border-orange-100 py-3 whitespace-nowrap">
         <div class="animate-marquee flex gap-20 items-center text-orange-800 font-medium text-sm">
             <span class="flex items-center gap-2">
                 " Buka Jam 08.00 pagi - 09.00 Malam " - Warung Makan SOPONGIRO tersedia di 
@@ -666,6 +695,45 @@
         function scrollKeMenu() { playSound(); document.getElementById('menu-section').scrollIntoView({ behavior: 'smooth' }); }
         function hubungiKami() { playSound(); window.open(`https://wa.me/${NO_WHATSAPP}`, '_blank'); }
 
+        function initMarquee() {
+            const container = document.querySelector('.marquee-container');
+            const content = document.querySelector('.animate-marquee');
+            if (!container || !content) return;
+
+            let isDown = false;
+            let startX, scrollLeft;
+            let scrollSpeed = window.innerWidth < 640 ? 1.0 : 0.7; // Kecepatan auto-scroll
+
+            function step() {
+                if (!isDown) {
+                    container.scrollLeft += scrollSpeed;
+                    // Reset ke awal jika sudah sampai setengah (looping mulus)
+                    if (container.scrollLeft >= content.scrollWidth / 2) {
+                        container.scrollLeft = 0;
+                    }
+                }
+                requestAnimationFrame(step);
+            }
+
+            container.addEventListener('mousedown', (e) => {
+                isDown = true;
+                startX = e.pageX - container.offsetLeft;
+                scrollLeft = container.scrollLeft;
+            });
+            container.addEventListener('mouseleave', () => isDown = false);
+            container.addEventListener('mouseup', () => isDown = false);
+            container.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - container.offsetLeft;
+                const walk = (x - startX) * 2; // Kecepatan geser manual
+                container.scrollLeft = scrollLeft - walk;
+            });
+            container.addEventListener('touchstart', () => isDown = true, {passive: true});
+            container.addEventListener('touchend', () => isDown = false);
+            requestAnimationFrame(step);
+        }
+
         function cekStatusToko() {
             const h = new Date().getHours();
             const s = document.getElementById('status-toko');
@@ -684,7 +752,7 @@
             }
         }
 
-        window.onload = () => { renderMenu(); cekStatusToko(); lucide.createIcons(); };
+        window.onload = () => { renderMenu(); cekStatusToko(); lucide.createIcons(); initMarquee(); };
     </script>
 </body>
 </html>
